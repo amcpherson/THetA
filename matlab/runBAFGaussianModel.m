@@ -26,6 +26,7 @@
 % 7. size - size of figure in inches (i.e. [11,8])
 % 8. varargin - By default only a plot for the best C, mu pair is output.
 %    Include an additional parameter 'all' to output plots of all solutions. 
+%    Set to 'none' to disable plotting.
 %
 % OUTPUT:
 % prefix.BAF.BEST.pdf - pdf plot of best solution or prefix.BAF.ALL.pdf if
@@ -66,9 +67,10 @@ end
 %Step 3: Save NLL to file
 saveResultsWithNLL(resultsFile,prefix,NLL);
 
-%Step 4: Create plot
-plotBAFGaussianResults(tumor, normal, intervals, chrmsToUse, results, prefix,size,opts);
-
+%Step 4: Create plot (optional)
+if (opts.TYPE != 'none')
+  plotBAFGaussianResults(tumor, normal, intervals, chrmsToUse, results, prefix,size,opts);
+end
 
 end
 
@@ -343,6 +345,11 @@ for i=1:numChrms
             below_y = tumor_yCoords(below_y_idx);
             
             [above, below] = calcEstBAF(C,mu,j);
+
+            if (isnan(above))
+              break
+            end
+
             above_mu_vector = repmat(above,numel(above_y),1);
             below_mu_vector = repmat(below,numel(below_y),1);
             std_above_vector = repmat(normal_std,numel(above_y),1);
@@ -391,13 +398,7 @@ function[intervals] = loadIntervalFile(intervalFile)
 
 intervals = importdata(intervalFile);
 
-if (isstruct(intervals))
-    intervals = intervals.data;
-    
-    if (size(intervals,2) == 6) %ID column still there
-        intervals = intervals(:,2:end);
-    end
-end
+intervals = intervals(:,2:end);
 
 end %end loadIntervalFile function
 
@@ -433,7 +434,6 @@ function[results] = loadResultsFile(resultsFile)
             continue;
         end
 
-        likelihood = str2mat(parts(1));
         mu_str = regexp(parts{2},',','split');
         mu  = zeros(size(mu_str));
         mu = mu';
